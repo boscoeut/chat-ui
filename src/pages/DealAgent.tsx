@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ChatSidebar from './ChatSidebar';
 import ChatHistory from './ChatHistory';
 import ChatInput from './ChatInput';
+import { sendMessage } from '../lib/backend';
 
 const mockConversations = [
   { id: 1, name: 'Chat with Alice' },
@@ -9,23 +10,46 @@ const mockConversations = [
   { id: 3, name: 'Support Inquiry' },
 ];
 
-const mockMessages = [
-  { id: 1, sender: 'user' as 'user', text: 'Hello, what is a bird?' },
-  { id: 2, sender: 'agent' as 'agent', text: 'A bird is a warm-blooded, egg-laying animal that belongs to the class Aves.' },
-];
 
 export default function DealAgent() {
   const [conversations, setConversations] = useState(mockConversations);
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState([
+    { id: 1, sender: 'user' as 'user', text: 'Hello, what is a bird?' },
+    { id: 2, sender: 'agent' as 'agent', text: 'A bird is a warm-blooded, egg-laying animal that belongs to the class Aves.' },
+  ]);
   const [input, setInput] = useState('');
   const [selectedConversation, setSelectedConversation] = useState(conversations[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    setMessages([...messages, { id: messages.length + 1, sender: 'user' as 'user', text: input }]);
+    const userMessage = { id: messages.length + 1, sender: 'user' as 'user', text: input };
+    setMessages([...messages, userMessage]);
     setInput('');
+
+    // Prepare messages for OpenAI
+    const openAIMessages = [
+      ...messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      })),
+      { role: 'user', content: input }
+    ];
+
+    try {
+      const data = await sendMessage(openAIMessages);
+      const aiText = data.choices[0].message.content;
+      setMessages(msgs => [
+        ...msgs,
+        { id: msgs.length + 1, sender: 'agent' as 'agent', text: aiText }
+      ]);
+    } catch (err) {
+      setMessages(msgs => [
+        ...msgs,
+        { id: msgs.length + 1, sender: 'agent' as 'agent', text: 'Error: Could not get response from OpenAI.' }
+      ]);
+    }
   };
 
   const handleNewChat = () => {
