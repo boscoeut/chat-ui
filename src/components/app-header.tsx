@@ -13,11 +13,30 @@ import { AppSidebar } from './app-sidebar'
 import { ModeToggle } from './mode-toggle'
 import { useAppStore } from '@/store/app'
 import { DealSelector } from './deal-selector'
+import { useTheme } from '@/contexts/ThemeContext'
+import { Sun, Moon, TreePalm, Droplet, Monitor } from 'lucide-react'
 
 export function AppHeader() {
     const location = useLocation()
     const sidebarOpen = useAppStore(s => s.sidebarOpen)
     const toggleSidebar = useAppStore(s => s.toggleSidebar)
+    const { theme } = useTheme()
+
+    function ThemeIcon() {
+        switch (theme) {
+            case 'light':
+                return <Sun className="w-5 h-5 text-yellow-500" />
+            case 'dark':
+                return <Moon className="w-5 h-5 text-blue-900 dark:text-blue-200" />
+            case 'forest':
+                return <TreePalm className="w-5 h-5 text-green-700" />
+            case 'ocean':
+                return <Droplet className="w-5 h-5 text-sky-500" />
+            case 'system':
+            default:
+                return <Monitor className="w-5 h-5 text-gray-500" />
+        }
+    }
 
     return (
         <header className="bg-background sticky top-0 z-50 border-b">
