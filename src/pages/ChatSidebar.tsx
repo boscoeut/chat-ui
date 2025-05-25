@@ -1,4 +1,4 @@
-import { PencilLine, Trash, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PencilLine, Trash } from 'lucide-react';
 
 type Conversation = { id: number; name: string };
 
@@ -11,21 +11,11 @@ type ChatSidebarProps = {
   onToggleSidebar: () => void;
 };
 
-export default function ChatSidebar({ conversations, selectedConversation, onSelectConversation, onNewChat, open, onToggleSidebar }: ChatSidebarProps) {
+export default function ChatSidebar({ conversations, selectedConversation, onSelectConversation, onNewChat, open }: ChatSidebarProps) {
   if (!open) {
-    return (
-      <aside className="w-14 bg-muted border-r flex flex-col items-center pt-4">
-        <button
-          className="p-2 rounded hover:bg-accent"
-          title="Open sidebar"
-          onClick={onToggleSidebar}
-          type="button"
-        >
-          <PanelLeftOpen className="w-5 h-5" />
-        </button>
-      </aside>
-    );
+    return null;
   }
+
   return (
     <aside className="w-64 bg-muted border-r flex flex-col">
       <div className="px-3 py-2 border-b flex items-center">
