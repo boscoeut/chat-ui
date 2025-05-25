@@ -1,5 +1,6 @@
 import { Copy, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 type Message = { id: number; sender: 'user' | 'agent'; text: string };
 
@@ -18,12 +19,15 @@ export default function ChatHistory({ messages, chatEndRef, onRetry }: ChatHisto
     setTimeout(() => setCopiedId(null), 1000);
   };
 
+  console.log(messages);
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 bg-background">
       {messages.map(msg => (
         <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
           <div className={`relative rounded-lg px-4 py-2 max-w-[70%] ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-            {msg.text}
+            {msg.sender === 'agent'
+              ? <ReactMarkdown>{msg.text}</ReactMarkdown>
+              : msg.text}
           </div>
           {msg.sender === 'agent' && (
             <div className="flex gap-2 mt-2 ml-1">
