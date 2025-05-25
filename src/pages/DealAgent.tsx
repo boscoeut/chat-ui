@@ -5,31 +5,20 @@ import ChatInput from './ChatInput';
 import { sendMessage } from '../lib/backend';
 import { useAppStore } from '../store/app';
 
-const initialConversations = [
-  { id: 1, name: 'Chat with Alice' },
-  { id: 2, name: 'Project X' },
-  { id: 3, name: 'Support Inquiry' },
-];
-
-const initialMessages: { [id: number]: { id: number; sender: 'user' | 'agent'; text: string }[] } = {
-  1: [
-    { id: 1, sender: 'user', text: 'Hello, what is a bird?' },
-    { id: 2, sender: 'agent', text: 'A bird is a warm-blooded, egg-laying animal that belongs to the class Aves.' },
-  ],
-  2: [],
-  3: [],
-};
-
 export default function DealAgent() {
-  const [conversations, setConversations] = useState(initialConversations);
-  const [messagesByConversation, setMessagesByConversation] = useState(initialMessages);
-  const [selectedConversation, setSelectedConversation] = useState(conversations[0].id);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [retryingId, setRetryingId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const sidebarOpen = useAppStore(s => s.sidebarOpen);
-  const toggleSidebar = useAppStore(s => s.toggleSidebar);
+  const {
+    conversations,
+    selectedConversation,
+    messagesByConversation,
+    addMessage,
+    updateMessage,
+    updateConversationName,
+  } = useAppStore();
 
   const messages = messagesByConversation[selectedConversation] || [];
 
@@ -40,16 +29,17 @@ export default function DealAgent() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    setMessagesByConversation(prev => {
-      const msgs = prev[selectedConversation] || [];
-      return {
-        ...prev,
-        [selectedConversation]: [
-          ...msgs,
-          { id: msgs.length + 1, sender: 'user' as 'user', text: input }
-        ]
-      };
-    });
+
+    const userMessage = { id: messages.length + 1, sender: 'user' as const, text: input };
+    addMessage(selectedConversation, userMessage);
+
+    // If this is the first message in the conversation, use it to name the chat
+    if (messages.length === 0) {
+      // Truncate the message to a reasonable length for the title
+      const chatName = input.length > 30 ? input.slice(0, 30) + '...' : input;
+      updateConversationName(selectedConversation, chatName);
+    }
+
     setInput('');
     setLoading(true);
 
@@ -65,26 +55,16 @@ export default function DealAgent() {
     try {
       const data = await sendMessage(openAIMessages);
       const aiText = data.choices[0].message.content;
-      setMessagesByConversation(prev => {
-        const msgs = prev[selectedConversation] || [];
-        return {
-          ...prev,
-          [selectedConversation]: [
-            ...msgs,
-            { id: msgs.length + 1, sender: 'agent' as 'agent', text: aiText }
-          ]
-        };
+      addMessage(selectedConversation, {
+        id: messages.length + 2,
+        sender: 'agent',
+        text: aiText
       });
     } catch (err) {
-      setMessagesByConversation(prev => {
-        const msgs = prev[selectedConversation] || [];
-        return {
-          ...prev,
-          [selectedConversation]: [
-            ...msgs,
-            { id: msgs.length + 1, sender: 'agent' as 'agent', text: 'Error: Could not get response from OpenAI.' }
-          ]
-        };
+      addMessage(selectedConversation, {
+        id: messages.length + 2,
+        sender: 'agent',
+        text: 'Error: Could not get response from OpenAI.'
       });
     } finally {
       setLoading(false);
@@ -100,13 +80,9 @@ export default function DealAgent() {
     const userMsg = msgs[agentIdx - 1];
     if (!userMsg || userMsg.sender !== 'user') return;
     setRetryingId(agentMsgId);
-    setMessagesByConversation(prev => ({
-      ...prev,
-      [selectedConversation]: prev[selectedConversation].map(m =>
-        m.id === agentMsgId ? { ...m, text: 'Regenerating...' } : m
-      )
-    }));
+    updateMessage(selectedConversation, agentMsgId, 'Regenerating...');
     setLoading(true);
+
     // Prepare messages up to and including the user message
     const openAIMessages = [
       ...msgs.slice(0, agentIdx).map(m => ({
@@ -115,22 +91,13 @@ export default function DealAgent() {
       })),
       { role: 'user', content: userMsg.text }
     ];
+
     try {
       const data = await sendMessage(openAIMessages);
       const aiText = data.choices[0].message.content;
-      setMessagesByConversation(prev => ({
-        ...prev,
-        [selectedConversation]: prev[selectedConversation].map(m =>
-          m.id === agentMsgId ? { ...m, text: aiText } : m
-        )
-      }));
+      updateMessage(selectedConversation, agentMsgId, aiText);
     } catch (err) {
-      setMessagesByConversation(prev => ({
-        ...prev,
-        [selectedConversation]: prev[selectedConversation].map(m =>
-          m.id === agentMsgId ? { ...m, text: 'Error: Could not get response from OpenAI.' } : m
-        )
-      }));
+      updateMessage(selectedConversation, agentMsgId, 'Error: Could not get response from OpenAI.');
     } finally {
       setRetryingId(null);
       setLoading(false);
@@ -139,17 +106,13 @@ export default function DealAgent() {
 
   // Edit logic: update user message and regenerate following agent response
   const handleEditUserMessage = async (id: number, newText: string) => {
-    setMessagesByConversation(prev => ({
-      ...prev,
-      [selectedConversation]: prev[selectedConversation].map(m =>
-        m.id === id ? { ...m, text: newText } : m
-      )
-    }));
+    updateMessage(selectedConversation, id, newText);
     const msgs = messagesByConversation[selectedConversation] || [];
     const userIdx = msgs.findIndex(m => m.id === id && m.sender === 'user');
     if (userIdx === -1 || userIdx === msgs.length - 1) return;
     const agentMsg = msgs[userIdx + 1];
     if (!agentMsg || agentMsg.sender !== 'agent') return;
+
     // Prepare messages up to and including the edited user message
     const openAIMessages = [
       ...msgs.slice(0, userIdx).map(m => ({
@@ -158,56 +121,22 @@ export default function DealAgent() {
       })),
       { role: 'user', content: newText }
     ];
+
     // Show regenerating...
-    setMessagesByConversation(prev => ({
-      ...prev,
-      [selectedConversation]: prev[selectedConversation].map(m =>
-        m.id === agentMsg.id ? { ...m, text: 'Regenerating...' } : m
-      )
-    }));
+    updateMessage(selectedConversation, agentMsg.id, 'Regenerating...');
+
     try {
       const data = await sendMessage(openAIMessages);
       const aiText = data.choices[0].message.content;
-      setMessagesByConversation(prev => ({
-        ...prev,
-        [selectedConversation]: prev[selectedConversation].map(m =>
-          m.id === agentMsg.id ? { ...m, text: aiText } : m
-        )
-      }));
+      updateMessage(selectedConversation, agentMsg.id, aiText);
     } catch (err) {
-      setMessagesByConversation(prev => ({
-        ...prev,
-        [selectedConversation]: prev[selectedConversation].map(m =>
-          m.id === agentMsg.id ? { ...m, text: 'Error: Could not get response from OpenAI.' } : m
-        )
-      }));
+      updateMessage(selectedConversation, agentMsg.id, 'Error: Could not get response from OpenAI.');
     }
-  };
-
-  const handleNewChat = () => {
-    const newId = Math.max(...conversations.map(c => c.id)) + 1;
-    const newConv = { id: newId, name: `New Chat ${newId}` };
-    setConversations([newConv, ...conversations]);
-    setMessagesByConversation(prev => ({ ...prev, [newId]: [] }));
-    setSelectedConversation(newId);
-    setInput('');
-  };
-
-  const handleSelectConversation = (id: number) => {
-    setSelectedConversation(id);
-    setInput('');
   };
 
   return (
     <div className="flex h-full min-h-0">
-      <ChatSidebar
-        open={sidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        conversations={conversations}
-        selectedConversation={selectedConversation}
-        onSelectConversation={handleSelectConversation}
-        onNewChat={handleNewChat}
-      />
+      <ChatSidebar open={sidebarOpen} />
       <section className="flex-1 flex flex-col h-full">
         <ChatHistory
           messages={messages}
