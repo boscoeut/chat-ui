@@ -19,6 +19,10 @@ type AppState = {
   addMessage: (conversationId: number, message: Message) => void;
   updateMessage: (conversationId: number, messageId: number, text: string) => void;
   updateConversationName: (id: number, name: string) => void;
+
+  // Deal state
+  selectedDeal: string | null;
+  setSelectedDeal: (dealId: string | null) => void;
 };
 
 const initialConversations = [
@@ -88,4 +92,8 @@ export const useAppStore = create<AppState>((set) => ({
       conv.id === id ? { ...conv, name } : conv
     ),
   })),
+
+  // Deal state
+  selectedDeal: null,
+  setSelectedDeal: (dealId) => set({ selectedDeal: dealId }),
 })); 

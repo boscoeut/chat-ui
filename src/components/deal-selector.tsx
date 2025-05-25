@@ -8,6 +8,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 import {
   Popover,
@@ -16,38 +17,11 @@ import {
 } from "@/components/ui/popover"
 import { useAppStore } from '@/store/app'
 
-// Sample deals data - replace with your actual data source
+// Deals data: Apple, Microsoft, NVIDIA
 const deals = [
-  {
-    id: "1",
-    name: "Acme Corp Acquisition",
-    value: "$50M",
-    status: "In Progress"
-  },
-  {
-    id: "2",
-    name: "TechStart Merger",
-    value: "$75M",
-    status: "Pending"
-  },
-  {
-    id: "3",
-    name: "Global Solutions Partnership",
-    value: "$100M",
-    status: "Completed"
-  },
-  {
-    id: "4",
-    name: "Innovation Labs Investment",
-    value: "$25M",
-    status: "In Progress"
-  },
-  {
-    id: "5",
-    name: "Future Systems Integration",
-    value: "$150M",
-    status: "Pending"
-  }
+  { id: "Apple", name: "Apple" },
+  { id: "Microsoft", name: "Microsoft" },
+  { id: "NVIDIA", name: "NVIDIA" },
 ]
 
 export function DealSelector() {
@@ -77,32 +51,29 @@ export function DealSelector() {
       <PopoverContent className="w-[200px] p-0">
         <Command>
           <CommandInput placeholder="Search deals..." />
-          <CommandEmpty>No deal found.</CommandEmpty>
-          <CommandGroup>
-            {sortedDeals.map((deal) => (
-              <CommandItem
-                key={deal.id}
-                value={deal.name}
-                onSelect={() => {
-                  setSelectedDeal(deal.id === selectedDeal ? null : deal.id)
-                  setOpen(false)
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4 pointer-events-none",
-                    selectedDeal === deal.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex flex-col">
-                  <span>{deal.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {deal.value} • {deal.status}
-                  </span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandList>
+            <CommandEmpty>No deal found.</CommandEmpty>
+            <CommandGroup>
+              {sortedDeals.map((deal) => (
+                <CommandItem
+                  key={deal.id}
+                  value={deal.name}
+                  onSelect={() => {
+                    setSelectedDeal(deal.id === selectedDeal ? null : deal.id)
+                    setOpen(false)
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedDeal === deal.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {deal.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
