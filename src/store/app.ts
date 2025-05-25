@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 type Conversation = { id: number; name: string };
 type Message = { id: number; sender: 'user' | 'agent'; text: string };
@@ -33,67 +34,81 @@ const initialMessages: { [id: number]: Message[] } = {
   1: [],
 };
 
-export const useAppStore = create<AppState>((set) => ({
-  // Sidebar state
-  sidebarOpen: true,
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      // Sidebar state
+      sidebarOpen: true,
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-  // Chat state
-  conversations: initialConversations,
-  messagesByConversation: initialMessages,
-  selectedConversation: initialConversations[0].id,
-  setSelectedConversation: (id) => set({ selectedConversation: id }),
-  addConversation: (name) => set((state) => {
-    const newId = Math.max(...state.conversations.map(c => c.id)) + 1;
-    return {
-      conversations: [{ id: newId, name }, ...state.conversations],
-      messagesByConversation: { ...state.messagesByConversation, [newId]: [] },
-      selectedConversation: newId,
-    };
-  }),
-  deleteConversation: (id) => set((state) => {
-    // Don't delete if it's the last conversation
-    if (state.conversations.length <= 1) {
-      return state;
+      // Chat state
+      conversations: initialConversations,
+      messagesByConversation: initialMessages,
+      selectedConversation: initialConversations[0].id,
+      setSelectedConversation: (id) => set({ selectedConversation: id }),
+      addConversation: (name) => set((state) => {
+        const newId = Math.max(...state.conversations.map(c => c.id)) + 1;
+        return {
+          conversations: [{ id: newId, name }, ...state.conversations],
+          messagesByConversation: { ...state.messagesByConversation, [newId]: [] },
+          selectedConversation: newId,
+        };
+      }),
+      deleteConversation: (id) => set((state) => {
+        // Don't delete if it's the last conversation
+        if (state.conversations.length <= 1) {
+          return state;
+        }
+
+        const newConversations = state.conversations.filter(c => c.id !== id);
+        const newMessages = { ...state.messagesByConversation };
+        delete newMessages[id];
+        
+        // If we deleted the selected conversation, select the first available one
+        const newSelected = state.selectedConversation === id 
+          ? (newConversations[0]?.id || 0)
+          : state.selectedConversation;
+
+        return {
+          conversations: newConversations,
+          messagesByConversation: newMessages,
+          selectedConversation: newSelected,
+        };
+      }),
+      addMessage: (conversationId, message) => set((state) => ({
+        messagesByConversation: {
+          ...state.messagesByConversation,
+          [conversationId]: [...(state.messagesByConversation[conversationId] || []), message],
+        },
+      })),
+      updateMessage: (conversationId, messageId, text) => set((state) => ({
+        messagesByConversation: {
+          ...state.messagesByConversation,
+          [conversationId]: state.messagesByConversation[conversationId].map(m =>
+            m.id === messageId ? { ...m, text } : m
+          ),
+        },
+      })),
+      updateConversationName: (id, name) => set((state) => ({
+        conversations: state.conversations.map(conv =>
+          conv.id === id ? { ...conv, name } : conv
+        ),
+      })),
+
+      // Deal state
+      selectedDeal: null,
+      setSelectedDeal: (dealId) => set({ selectedDeal: dealId }),
+    }),
+    {
+      name: 'app-storage', // unique name for localStorage key
+      partialize: (state) => ({
+        // Only persist these fields
+        selectedDeal: state.selectedDeal,
+        conversations: state.conversations,
+        messagesByConversation: state.messagesByConversation,
+        selectedConversation: state.selectedConversation,
+      }),
     }
-
-    const newConversations = state.conversations.filter(c => c.id !== id);
-    const newMessages = { ...state.messagesByConversation };
-    delete newMessages[id];
-    
-    // If we deleted the selected conversation, select the first available one
-    const newSelected = state.selectedConversation === id 
-      ? (newConversations[0]?.id || 0)
-      : state.selectedConversation;
-
-    return {
-      conversations: newConversations,
-      messagesByConversation: newMessages,
-      selectedConversation: newSelected,
-    };
-  }),
-  addMessage: (conversationId, message) => set((state) => ({
-    messagesByConversation: {
-      ...state.messagesByConversation,
-      [conversationId]: [...(state.messagesByConversation[conversationId] || []), message],
-    },
-  })),
-  updateMessage: (conversationId, messageId, text) => set((state) => ({
-    messagesByConversation: {
-      ...state.messagesByConversation,
-      [conversationId]: state.messagesByConversation[conversationId].map(m =>
-        m.id === messageId ? { ...m, text } : m
-      ),
-    },
-  })),
-  updateConversationName: (id, name) => set((state) => ({
-    conversations: state.conversations.map(conv =>
-      conv.id === id ? { ...conv, name } : conv
-    ),
-  })),
-
-  // Deal state
-  selectedDeal: null,
-  setSelectedDeal: (dealId) => set({ selectedDeal: dealId }),
-})); 
+  )
+); 
