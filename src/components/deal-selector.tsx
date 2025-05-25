@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useAppStore } from '@/store/app'
 
 // Sample deals data - replace with your actual data source
 const deals = [
@@ -51,7 +52,12 @@ const deals = [
 
 export function DealSelector() {
   const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState("")
+  // Use Zustand for selected deal
+  const selectedDeal = useAppStore((s: any) => s.selectedDeal)
+  const setSelectedDeal = useAppStore((s: any) => s.setSelectedDeal)
+
+  // Alphabetize deals by name
+  const sortedDeals = [...deals].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -62,8 +68,8 @@ export function DealSelector() {
           aria-expanded={open}
           className="w-[200px] justify-between"
         >
-          {value
-            ? deals.find((deal) => deal.id === value)?.name
+          {selectedDeal
+            ? deals.find((deal) => deal.id === selectedDeal)?.name
             : "Select deal..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -73,19 +79,19 @@ export function DealSelector() {
           <CommandInput placeholder="Search deals..." />
           <CommandEmpty>No deal found.</CommandEmpty>
           <CommandGroup>
-            {deals.map((deal) => (
+            {sortedDeals.map((deal) => (
               <CommandItem
                 key={deal.id}
-                value={deal.id}
-                onSelect={(currentValue) => {
-                  setValue(currentValue === value ? "" : currentValue)
+                value={deal.name}
+                onSelect={() => {
+                  setSelectedDeal(deal.id === selectedDeal ? null : deal.id)
                   setOpen(false)
                 }}
               >
                 <Check
                   className={cn(
-                    "mr-2 h-4 w-4",
-                    value === deal.id ? "opacity-100" : "opacity-0"
+                    "mr-2 h-4 w-4 pointer-events-none",
+                    selectedDeal === deal.id ? "opacity-100" : "opacity-0"
                   )}
                 />
                 <div className="flex flex-col">
