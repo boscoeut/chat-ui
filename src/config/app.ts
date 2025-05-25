@@ -1,25 +1,9 @@
 type AppConfigType = {
     name: string,
-    github: {
-        title: string,
-        url: string
-    },
-    author: {
-        name: string,
-        url: string
-    },
 }
 
 export const appConfig: AppConfigType = {
-    name: import.meta.env.VITE_APP_NAME ?? "AWM AI",
-    github: {
-        title: "React Shadcn Starter",
-        url: "https://github.com/hayyi2/react-shadcn-starter",
-    },
-    author: {
-        name: "hayyi",
-        url: "https://github.com/hayyi2/",
-    }
+    name: import.meta.env.VITE_APP_NAME ?? "AWM AI"
 }
 
 export const baseUrl = import.meta.env.VITE_BASE_URL ?? ""
