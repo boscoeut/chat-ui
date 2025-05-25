@@ -12,6 +12,7 @@ import { AppLogo } from './app-logo'
 import { AppSidebar } from './app-sidebar'
 import { ModeToggle } from './mode-toggle'
 import { useAppStore } from '@/store/app'
+import { DealSelector } from './deal-selector'
 
 export function AppHeader() {
     const location = useLocation()
@@ -21,13 +22,6 @@ export function AppHeader() {
     return (
         <header className="bg-background sticky top-0 z-50 border-b">
             <div className="w-full ~max-w-7xl mx-auto flex items-center gap-2 h-14 px-4 md:px-8">
-                
-                <div className='flex items-center gap-2 md:gap-0'>
-                    <AppSidebar />
-                    <Link to="/">
-                        <AppLogo />
-                    </Link>
-                </div>
                 <button
                     className="p-2 rounded hover:bg-accent mr-2"
                     title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -36,6 +30,13 @@ export function AppHeader() {
                 >
                     {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
                 </button>
+                <div className='flex items-center gap-2 md:gap-0'>
+                    <AppSidebar />
+                    <Link to="/">
+                        <AppLogo />
+                    </Link>
+                </div>
+
                 <div className='ml-4 flex-1 flex items-center justify-between'>
                     <div className='flex-1'>
                         <nav className="hidden md:flex gap-1">
@@ -87,7 +88,8 @@ export function AppHeader() {
                             ))}
                         </nav>
                     </div>
-                    <nav className="flex gap-1">
+                    <nav className="flex items-center gap-2">
+                        <DealSelector />
                         <ModeToggle />
                     </nav>
                 </div>
