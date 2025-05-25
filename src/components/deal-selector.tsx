@@ -24,6 +24,17 @@ export function DealSelector() {
   const selectedDeal = useAppStore((s: any) => s.selectedDeal)
   const setSelectedDeal = useAppStore((s: any) => s.setSelectedDeal)
 
+  // Set initial deal from URL param, always taking precedence over persisted state
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const dealParam = params.get('deal')
+    if (dealParam && deals.some(d => d.id === dealParam)) {
+      setSelectedDeal(dealParam)
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Alphabetize deals by name and filter by search
   const filteredDeals = React.useMemo(() => {
     return [...deals]
