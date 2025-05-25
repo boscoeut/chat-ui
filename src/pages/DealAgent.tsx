@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import ChatSidebar from './ChatSidebar';
 import ChatHistory from './ChatHistory';
 import ChatInput from './ChatInput';
-import { sendMessage } from '../lib/backend';
+import { sendMessage, sendMessageStream } from '../lib/backend';
 import { useAppStore } from '../store/app';
 
 export default function DealAgent() {
@@ -52,20 +52,20 @@ export default function DealAgent() {
       { role: 'user', content: input }
     ];
 
+    // Add placeholder agent message
+    const agentId = messages.length + 2;
+    addMessage(selectedConversation, {
+      id: agentId,
+      sender: 'agent',
+      text: ''
+    });
+
     try {
-      const data = await sendMessage(openAIMessages);
-      const aiText = data.choices[0].message.content;
-      addMessage(selectedConversation, {
-        id: messages.length + 2,
-        sender: 'agent',
-        text: aiText
+      await sendMessageStream(openAIMessages, (partialText) => {
+        updateMessage(selectedConversation, agentId, partialText);
       });
     } catch (err) {
-      addMessage(selectedConversation, {
-        id: messages.length + 2,
-        sender: 'agent',
-        text: 'Error: Could not get response from OpenAI.'
-      });
+      updateMessage(selectedConversation, agentId, 'Error: Could not get response from OpenAI.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function DealAgent() {
     const userMsg = msgs[agentIdx - 1];
     if (!userMsg || userMsg.sender !== 'user') return;
     setRetryingId(agentMsgId);
-    updateMessage(selectedConversation, agentMsgId, 'Regenerating...');
+    updateMessage(selectedConversation, agentMsgId, '');
     setLoading(true);
 
     // Prepare messages up to and including the user message
@@ -93,9 +93,9 @@ export default function DealAgent() {
     ];
 
     try {
-      const data = await sendMessage(openAIMessages);
-      const aiText = data.choices[0].message.content;
-      updateMessage(selectedConversation, agentMsgId, aiText);
+      await sendMessageStream(openAIMessages, (partialText) => {
+        updateMessage(selectedConversation, agentMsgId, partialText);
+      });
     } catch (err) {
       updateMessage(selectedConversation, agentMsgId, 'Error: Could not get response from OpenAI.');
     } finally {
@@ -123,12 +123,12 @@ export default function DealAgent() {
     ];
 
     // Show regenerating...
-    updateMessage(selectedConversation, agentMsg.id, 'Regenerating...');
+    updateMessage(selectedConversation, agentMsg.id, '');
 
     try {
-      const data = await sendMessage(openAIMessages);
-      const aiText = data.choices[0].message.content;
-      updateMessage(selectedConversation, agentMsg.id, aiText);
+      await sendMessageStream(openAIMessages, (partialText) => {
+        updateMessage(selectedConversation, agentMsg.id, partialText);
+      });
     } catch (err) {
       updateMessage(selectedConversation, agentMsg.id, 'Error: Could not get response from OpenAI.');
     }
