@@ -19,6 +19,7 @@ export default function ChatSidebar({ conversations, selectedConversation, onSel
           className="p-2 rounded hover:bg-accent"
           title="Open sidebar"
           onClick={onToggleSidebar}
+          type="button"
         >
           <PanelLeftOpen className="w-5 h-5" />
         </button>
@@ -27,19 +28,21 @@ export default function ChatSidebar({ conversations, selectedConversation, onSel
   }
   return (
     <aside className="w-64 bg-muted border-r flex flex-col">
-      <div className="px-3 py-2 border-b flex items-center gap-2">
+      <div className="px-3 py-2 border-b flex items-center justify-between">
         <button
-          className="flex items-center gap-2 px-1 py-1 flex-1 text-base text-left font-normal hover:bg-accent rounded transition-colors"
+          className="flex items-center gap-2 px-1 py-1 flex-grow text-base text-left font-normal hover:bg-accent rounded transition-colors"
           title="New chat"
           onClick={onNewChat}
+          type="button"
         >
           <PencilLine className="w-5 h-5" />
           <span>New chat</span>
         </button>
         <button
-          className="p-2 rounded hover:bg-accent"
+          className="p-2 rounded hover:bg-accent ml-2"
           title="Close sidebar"
           onClick={onToggleSidebar}
+          type="button"
         >
           <PanelLeftClose className="w-5 h-5" />
         </button>

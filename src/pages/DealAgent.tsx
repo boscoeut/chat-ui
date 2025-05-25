@@ -4,24 +4,32 @@ import ChatHistory from './ChatHistory';
 import ChatInput from './ChatInput';
 import { sendMessage } from '../lib/backend';
 
-const mockConversations = [
+const initialConversations = [
   { id: 1, name: 'Chat with Alice' },
   { id: 2, name: 'Project X' },
   { id: 3, name: 'Support Inquiry' },
 ];
 
+const initialMessages: { [id: number]: { id: number; sender: 'user' | 'agent'; text: string }[] } = {
+  1: [
+    { id: 1, sender: 'user', text: 'Hello, what is a bird?' },
+    { id: 2, sender: 'agent', text: 'A bird is a warm-blooded, egg-laying animal that belongs to the class Aves.' },
+  ],
+  2: [],
+  3: [],
+};
+
 export default function DealAgent() {
-  const [conversations, setConversations] = useState(mockConversations);
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'user' as 'user', text: 'Hello, what is a bird?' },
-    { id: 2, sender: 'agent' as 'agent', text: 'A bird is a warm-blooded, egg-laying animal that belongs to the class Aves.' },
-  ]);
-  const [input, setInput] = useState('');
+  const [conversations, setConversations] = useState(initialConversations);
+  const [messagesByConversation, setMessagesByConversation] = useState(initialMessages);
   const [selectedConversation, setSelectedConversation] = useState(conversations[0].id);
+  const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [retryingId, setRetryingId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const messages = messagesByConversation[selectedConversation] || [];
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,8 +38,16 @@ export default function DealAgent() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    const userMessage = { id: messages.length + 1, sender: 'user' as 'user', text: input };
-    setMessages([...messages, userMessage]);
+    setMessagesByConversation(prev => {
+      const msgs = prev[selectedConversation] || [];
+      return {
+        ...prev,
+        [selectedConversation]: [
+          ...msgs,
+          { id: msgs.length + 1, sender: 'user' as 'user', text: input }
+        ]
+      };
+    });
     setInput('');
     setLoading(true);
 
@@ -47,15 +63,27 @@ export default function DealAgent() {
     try {
       const data = await sendMessage(openAIMessages);
       const aiText = data.choices[0].message.content;
-      setMessages(msgs => [
-        ...msgs,
-        { id: msgs.length + 1, sender: 'agent' as 'agent', text: aiText }
-      ]);
+      setMessagesByConversation(prev => {
+        const msgs = prev[selectedConversation] || [];
+        return {
+          ...prev,
+          [selectedConversation]: [
+            ...msgs,
+            { id: msgs.length + 1, sender: 'agent' as 'agent', text: aiText }
+          ]
+        };
+      });
     } catch (err) {
-      setMessages(msgs => [
-        ...msgs,
-        { id: msgs.length + 1, sender: 'agent' as 'agent', text: 'Error: Could not get response from OpenAI.' }
-      ]);
+      setMessagesByConversation(prev => {
+        const msgs = prev[selectedConversation] || [];
+        return {
+          ...prev,
+          [selectedConversation]: [
+            ...msgs,
+            { id: msgs.length + 1, sender: 'agent' as 'agent', text: 'Error: Could not get response from OpenAI.' }
+          ]
+        };
+      });
     } finally {
       setLoading(false);
     }
@@ -63,23 +91,23 @@ export default function DealAgent() {
 
   // Retry logic: resend the user message before the given agent message
   const handleRetry = async (agentMsgId: number) => {
-    const agentIdx = messages.findIndex(m => m.id === agentMsgId && m.sender === 'agent');
+    const msgs = messagesByConversation[selectedConversation] || [];
+    const agentIdx = msgs.findIndex(m => m.id === agentMsgId && m.sender === 'agent');
     if (agentIdx <= 0) return;
     // Find the user message before this agent message
-    const userMsg = messages[agentIdx - 1];
+    const userMsg = msgs[agentIdx - 1];
     if (!userMsg || userMsg.sender !== 'user') return;
     setRetryingId(agentMsgId);
-    setMessages(msgs =>
-      msgs.map(m =>
-        m.id === agentMsgId
-          ? { ...m, text: 'Regenerating...' }
-          : m
+    setMessagesByConversation(prev => ({
+      ...prev,
+      [selectedConversation]: prev[selectedConversation].map(m =>
+        m.id === agentMsgId ? { ...m, text: 'Regenerating...' } : m
       )
-    );
+    }));
     setLoading(true);
     // Prepare messages up to and including the user message
     const openAIMessages = [
-      ...messages.slice(0, agentIdx).map(m => ({
+      ...msgs.slice(0, agentIdx).map(m => ({
         role: m.sender === 'user' ? 'user' : 'assistant',
         content: m.text,
       })),
@@ -88,21 +116,19 @@ export default function DealAgent() {
     try {
       const data = await sendMessage(openAIMessages);
       const aiText = data.choices[0].message.content;
-      setMessages(msgs =>
-        msgs.map(m =>
-          m.id === agentMsgId
-            ? { ...m, text: aiText }
-            : m
+      setMessagesByConversation(prev => ({
+        ...prev,
+        [selectedConversation]: prev[selectedConversation].map(m =>
+          m.id === agentMsgId ? { ...m, text: aiText } : m
         )
-      );
+      }));
     } catch (err) {
-      setMessages(msgs =>
-        msgs.map(m =>
-          m.id === agentMsgId
-            ? { ...m, text: 'Error: Could not get response from OpenAI.' }
-            : m
+      setMessagesByConversation(prev => ({
+        ...prev,
+        [selectedConversation]: prev[selectedConversation].map(m =>
+          m.id === agentMsgId ? { ...m, text: 'Error: Could not get response from OpenAI.' } : m
         )
-      );
+      }));
     } finally {
       setRetryingId(null);
       setLoading(false);
@@ -111,52 +137,63 @@ export default function DealAgent() {
 
   // Edit logic: update user message and regenerate following agent response
   const handleEditUserMessage = async (id: number, newText: string) => {
-    setMessages(msgs =>
-      msgs.map(m =>
+    setMessagesByConversation(prev => ({
+      ...prev,
+      [selectedConversation]: prev[selectedConversation].map(m =>
         m.id === id ? { ...m, text: newText } : m
       )
-    );
-    const userIdx = messages.findIndex(m => m.id === id && m.sender === 'user');
-    if (userIdx === -1 || userIdx === messages.length - 1) return;
-    const agentMsg = messages[userIdx + 1];
+    }));
+    const msgs = messagesByConversation[selectedConversation] || [];
+    const userIdx = msgs.findIndex(m => m.id === id && m.sender === 'user');
+    if (userIdx === -1 || userIdx === msgs.length - 1) return;
+    const agentMsg = msgs[userIdx + 1];
     if (!agentMsg || agentMsg.sender !== 'agent') return;
     // Prepare messages up to and including the edited user message
     const openAIMessages = [
-      ...messages.slice(0, userIdx).map(m => ({
+      ...msgs.slice(0, userIdx).map(m => ({
         role: m.sender === 'user' ? 'user' : 'assistant',
         content: m.text,
       })),
       { role: 'user', content: newText }
     ];
     // Show regenerating...
-    setMessages(msgs =>
-      msgs.map(m =>
+    setMessagesByConversation(prev => ({
+      ...prev,
+      [selectedConversation]: prev[selectedConversation].map(m =>
         m.id === agentMsg.id ? { ...m, text: 'Regenerating...' } : m
       )
-    );
+    }));
     try {
       const data = await sendMessage(openAIMessages);
       const aiText = data.choices[0].message.content;
-      setMessages(msgs =>
-        msgs.map(m =>
+      setMessagesByConversation(prev => ({
+        ...prev,
+        [selectedConversation]: prev[selectedConversation].map(m =>
           m.id === agentMsg.id ? { ...m, text: aiText } : m
         )
-      );
+      }));
     } catch (err) {
-      setMessages(msgs =>
-        msgs.map(m =>
+      setMessagesByConversation(prev => ({
+        ...prev,
+        [selectedConversation]: prev[selectedConversation].map(m =>
           m.id === agentMsg.id ? { ...m, text: 'Error: Could not get response from OpenAI.' } : m
         )
-      );
+      }));
     }
   };
 
   const handleNewChat = () => {
-    const newId = conversations.length + 1;
+    const newId = Math.max(...conversations.map(c => c.id)) + 1;
     const newConv = { id: newId, name: `New Chat ${newId}` };
     setConversations([newConv, ...conversations]);
+    setMessagesByConversation(prev => ({ ...prev, [newId]: [] }));
     setSelectedConversation(newId);
-    setMessages([]);
+    setInput('');
+  };
+
+  const handleSelectConversation = (id: number) => {
+    setSelectedConversation(id);
+    setInput('');
   };
 
   return (
@@ -166,7 +203,7 @@ export default function DealAgent() {
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         conversations={conversations}
         selectedConversation={selectedConversation}
-        onSelectConversation={setSelectedConversation}
+        onSelectConversation={handleSelectConversation}
         onNewChat={handleNewChat}
       />
       <section className="flex-1 flex flex-col h-full">
