@@ -23,7 +23,8 @@ export function ThemeProvider({
     useEffect(() => {
         const root = window.document.documentElement
 
-        root.classList.remove("light", "dark")
+        // Remove all possible theme classes
+        root.classList.remove("light", "dark", "forest", "ocean", "gs")
 
         if (theme === "system") {
             const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
