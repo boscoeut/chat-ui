@@ -109,6 +109,48 @@ export default function DealAgent() {
     }
   };
 
+  // Edit logic: update user message and regenerate following agent response
+  const handleEditUserMessage = async (id: number, newText: string) => {
+    setMessages(msgs =>
+      msgs.map(m =>
+        m.id === id ? { ...m, text: newText } : m
+      )
+    );
+    const userIdx = messages.findIndex(m => m.id === id && m.sender === 'user');
+    if (userIdx === -1 || userIdx === messages.length - 1) return;
+    const agentMsg = messages[userIdx + 1];
+    if (!agentMsg || agentMsg.sender !== 'agent') return;
+    // Prepare messages up to and including the edited user message
+    const openAIMessages = [
+      ...messages.slice(0, userIdx).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      })),
+      { role: 'user', content: newText }
+    ];
+    // Show regenerating...
+    setMessages(msgs =>
+      msgs.map(m =>
+        m.id === agentMsg.id ? { ...m, text: 'Regenerating...' } : m
+      )
+    );
+    try {
+      const data = await sendMessage(openAIMessages);
+      const aiText = data.choices[0].message.content;
+      setMessages(msgs =>
+        msgs.map(m =>
+          m.id === agentMsg.id ? { ...m, text: aiText } : m
+        )
+      );
+    } catch (err) {
+      setMessages(msgs =>
+        msgs.map(m =>
+          m.id === agentMsg.id ? { ...m, text: 'Error: Could not get response from OpenAI.' } : m
+        )
+      );
+    }
+  };
+
   const handleNewChat = () => {
     const newId = conversations.length + 1;
     const newConv = { id: newId, name: `New Chat ${newId}` };
@@ -128,7 +170,12 @@ export default function DealAgent() {
         onNewChat={handleNewChat}
       />
       <section className="flex-1 flex flex-col h-full">
-        <ChatHistory messages={messages} chatEndRef={chatEndRef} onRetry={handleRetry} />
+        <ChatHistory
+          messages={messages}
+          chatEndRef={chatEndRef}
+          onRetry={handleRetry}
+          onEditUserMessage={handleEditUserMessage}
+        />
         {loading && (
           <div className="text-center text-sm text-muted-foreground py-2">
             Waiting for response...
