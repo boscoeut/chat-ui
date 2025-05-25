@@ -8,7 +8,7 @@ import ComingSoon from './pages/ComingSoon'
 export default function Router() {
     return (
         <Routes>
-            <Route element={<AppLayout />}>
+            <Route element={<AppLayout />}> 
                 <Route path="" element={<DealAgent />} />
                 <Route path="pages">
                     <Route path="sample" element={<Sample />} />

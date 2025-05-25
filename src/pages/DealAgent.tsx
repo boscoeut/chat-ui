@@ -3,6 +3,7 @@ import ChatSidebar from './ChatSidebar';
 import ChatHistory from './ChatHistory';
 import ChatInput from './ChatInput';
 import { sendMessage } from '../lib/backend';
+import { useAppStore } from '../store/app';
 
 const initialConversations = [
   { id: 1, name: 'Chat with Alice' },
@@ -24,10 +25,11 @@ export default function DealAgent() {
   const [messagesByConversation, setMessagesByConversation] = useState(initialMessages);
   const [selectedConversation, setSelectedConversation] = useState(conversations[0].id);
   const [input, setInput] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [retryingId, setRetryingId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const sidebarOpen = useAppStore(s => s.sidebarOpen);
+  const toggleSidebar = useAppStore(s => s.toggleSidebar);
 
   const messages = messagesByConversation[selectedConversation] || [];
 
@@ -200,7 +202,7 @@ export default function DealAgent() {
     <div className="flex h-full min-h-0">
       <ChatSidebar
         open={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        onToggleSidebar={toggleSidebar}
         conversations={conversations}
         selectedConversation={selectedConversation}
         onSelectConversation={handleSelectConversation}
@@ -209,7 +211,7 @@ export default function DealAgent() {
       <section className="flex-1 flex flex-col h-full">
         <ChatHistory
           messages={messages}
-          chatEndRef={chatEndRef}
+          chatEndRef={chatEndRef as React.RefObject<HTMLDivElement>}
           onRetry={handleRetry}
           onEditUserMessage={handleEditUserMessage}
         />

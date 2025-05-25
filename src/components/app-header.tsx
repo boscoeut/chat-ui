@@ -6,18 +6,29 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { mainMenu } from '@/config/menu'
 import { cn } from '@/lib/utils'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { AppLogo } from './app-logo'
 import { AppSidebar } from './app-sidebar'
 import { ModeToggle } from './mode-toggle'
+import { useAppStore } from '@/store/app'
 
 export function AppHeader() {
     const location = useLocation()
+    const sidebarOpen = useAppStore(s => s.sidebarOpen)
+    const toggleSidebar = useAppStore(s => s.toggleSidebar)
 
     return (
         <header className="bg-background sticky top-0 z-50 border-b">
             <div className="w-full ~max-w-7xl mx-auto flex items-center gap-2 h-14 px-4 md:px-8">
+                <button
+                    className="p-2 rounded hover:bg-accent mr-2"
+                    title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                    onClick={toggleSidebar}
+                    type="button"
+                >
+                    {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+                </button>
                 <div className='flex items-center gap-2 md:gap-0'>
                     <AppSidebar />
                     <Link to="/">
@@ -29,7 +40,7 @@ export function AppHeader() {
                     <div className='flex-1'>
                         <nav className="hidden md:flex gap-1">
                             {mainMenu.map((item, index) => (
-                                (item.items && item.items.length > 0) ? (
+                                item.items && item.items.length > 0 ? (
                                     <DropdownMenu key={index}>
                                         <DropdownMenuTrigger className='focus-visible:outline-none'>
                                             <NavLink
@@ -78,10 +89,9 @@ export function AppHeader() {
                     </div>
                     <nav className="flex gap-1">
                         <ModeToggle />
-                        
                     </nav>
                 </div>
             </div>
-        </header >
+        </header>
     )
 }
