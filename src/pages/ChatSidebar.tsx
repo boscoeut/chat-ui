@@ -52,7 +52,7 @@ export default function ChatSidebar({ open }: ChatSidebarProps) {
           >
             <button
               className={cn(
-                "flex-1 text-left px-4 py-2 focus:outline-none",
+                "flex-1 text-left px-4 py-2 focus:outline-none cursor-pointer",
                 selectedConversation === conv.id 
                   ? "font-medium text-foreground" 
                   : "text-muted-foreground"
