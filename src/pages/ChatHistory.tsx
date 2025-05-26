@@ -62,7 +62,7 @@ export default function ChatHistory({ messages, chatEndRef, onRetry, onEditUserM
               ) : editingId === msg.id ? (
                 <div className="flex flex-col gap-2">
                   <input
-                    className="border rounded px-2 py-1 bg-white text-black"
+                    className="w-full bg-primary text-primary-foreground rounded-lg px-4 py-2 border-none outline-none placeholder:text-primary-foreground text-base"
                     value={editValue}
                     onChange={e => setEditValue(e.target.value)}
                     autoFocus
