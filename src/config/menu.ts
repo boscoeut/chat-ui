@@ -1,6 +1,4 @@
 import {
-    CircleAlert,
-    Files,
     Gauge,
     LucideIcon
 } from 'lucide-react'

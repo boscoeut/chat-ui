@@ -96,16 +96,6 @@ export default function ChatHistory({ messages, chatEndRef, onRetry, onEditUserM
               >
                 <Pencil className="w-4 h-4" />
               </button>
-              <button
-                className="p-1 rounded hover:bg-accent"
-                title="Copy"
-                onClick={() => handleCopy(msg.text, msg.id)}
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-              {copiedId === msg.id && (
-                <span className="text-xs bg-muted px-2 py-0.5 rounded shadow ml-2">Copied!</span>
-              )}
             </div>
           )}
         </div>
