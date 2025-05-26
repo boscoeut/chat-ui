@@ -7,9 +7,10 @@ type ChatInputProps = {
   onSend: (e: React.FormEvent) => void;
   disabled?: boolean;
   onFileChange?: (file: File | null) => void;
+  showAttachment?: boolean;
 };
 
-export default function ChatInput({ input, onInputChange, onSend, disabled, onFileChange }: ChatInputProps) {
+export default function ChatInput({ input, onInputChange, onSend, disabled, onFileChange, showAttachment = true }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -42,7 +43,7 @@ export default function ChatInput({ input, onInputChange, onSend, disabled, onFi
 
   return (
     <div className="border-t bg-background p-4">
-      {selectedFile && (
+      {showAttachment && selectedFile && (
         <div className="flex items-center mb-2 max-w-xs rounded-xl border border-muted bg-muted px-3 py-2 relative shadow-sm">
           {selectedFile.type.startsWith('image') && (
             <img
@@ -71,21 +72,25 @@ export default function ChatInput({ input, onInputChange, onSend, disabled, onFi
         </div>
       )}
       <form onSubmit={onSend} className="flex items-end gap-2">
-        <button
-          type="button"
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-800 text-muted-foreground"
-          onClick={handleAttachmentClick}
-          tabIndex={-1}
-          aria-label="Attach file"
-        >
-          <Paperclip className="w-5 h-5" />
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        {showAttachment && (
+          <>
+            <button
+              type="button"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-800 text-muted-foreground"
+              onClick={handleAttachmentClick}
+              tabIndex={-1}
+              aria-label="Attach file"
+            >
+              <Paperclip className="w-5 h-5" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </>
+        )}
         <textarea
           ref={textareaRef}
           className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring text-base resize-none min-h-[44px] max-h-[200px]"
