@@ -1,9 +1,9 @@
-import { useRef, useEffect, useState } from 'react';
-import ChatSidebar from './ChatSidebar';
+import { useEffect, useRef, useState } from 'react';
+import { sendMessageStream } from '../lib/backend';
+import { useAppStore } from '../store/app';
 import ChatHistory from './ChatHistory';
 import ChatInput from './ChatInput';
-import { sendMessage, sendMessageStream } from '../lib/backend';
-import { useAppStore } from '../store/app';
+import ChatSidebar from './ChatSidebar';
 
 export default function DealAgent() {
   const [input, setInput] = useState('');
@@ -150,6 +150,7 @@ export default function DealAgent() {
           </div>
         )}
         <ChatInput
+          showAttachment={false}
           input={input}
           onInputChange={setInput}
           onSend={handleSend}
