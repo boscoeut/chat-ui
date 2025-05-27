@@ -9,7 +9,7 @@ export default function Router() {
     return (
         <Routes>
             <Route element={<AppLayout />}> 
-                <Route path="" element={<DealAgent />} />
+                <Route path="" element={<DealAgent streaming={false} />} />
                 <Route path="pages">
                     <Route path="sample" element={<Sample />} />
                     <Route path="feature" element={<ComingSoon />} />
